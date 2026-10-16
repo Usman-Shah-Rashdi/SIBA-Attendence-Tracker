@@ -176,10 +176,14 @@
             return data;
         }
 
-        async function loadAttendance(semester, subject) {
+        async function loadAttendance(semester, subject, useSelectedValues = true) {
             const params = new URLSearchParams();
-            const selectedSemester = semester || semesterSelect.value;
-            const selectedSubject = subject || subjectSelect.value;
+            const selectedSemester = semester ?? (
+                useSelectedValues ? semesterSelect.value : ""
+            );
+            const selectedSubject = subject ?? (
+                useSelectedValues ? subjectSelect.value : ""
+            );
             if (selectedSemester) params.set("semester", selectedSemester);
             if (selectedSubject) params.set("subject", selectedSubject);
             const query = params.toString();
@@ -322,7 +326,7 @@
                 });
                 loginStatus.textContent = "Login successful. Loading attendance...";
                 await loadOptions();
-                await loadAttendance();
+                await loadAttendance(undefined, undefined, false);
                 showView("live");
             } catch (error) {
                 loginStatus.textContent = error.message;
