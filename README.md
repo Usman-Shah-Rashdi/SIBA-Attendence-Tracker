@@ -11,7 +11,7 @@ A clean local dashboard that logs in to the SIBA student portal and shows your a
 - **Live attendance** for any semester and subject
 - **Accurate percentage** calculated from the portal's attendance records
 - **Absence tracker** with 12 boxes showing allowed absences used
-- **One saved semester snapshot**, stored in your browser
+- **One saved semester snapshot**, stored in your browser, with an option to delete it
 - **Your password is never stored**, only forwarded to the portal
 
 ## 🚀 Quick Start

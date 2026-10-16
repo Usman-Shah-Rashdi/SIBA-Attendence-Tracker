@@ -43,6 +43,9 @@
         <section id="saved" class="view hidden">
             <h2>Saved Attendance</h2>
             <p id="saved-status" class="muted">No snapshot saved yet.</p>
+            <button id="clear-saved" type="button" hidden>
+                Delete saved semester
+            </button>
             <div id="saved-list" class="attendance-grid"></div>
         </section>
 
@@ -274,21 +277,33 @@
         function loadSavedAttendance() {
             const raw = localStorage.getItem("siba-attendance-snapshot");
             const status = document.getElementById("saved-status");
+            const clearButton = document.getElementById("clear-saved");
             const list = document.getElementById("saved-list");
 
             if (!raw) {
                 status.textContent = "No snapshot saved yet.";
+                clearButton.hidden = true;
                 list.replaceChildren();
                 return;
             }
 
             const snapshot = JSON.parse(raw);
+            clearButton.hidden = false;
             status.textContent =
                 `Saved locally: ${new Date(snapshot.savedAt).toLocaleString()}`;
             const records = snapshot.records ||
                 snapshot.semesters?.[0]?.records || [];
             renderAttendance(list, records);
         }
+
+        document.getElementById("clear-saved").addEventListener("click", () => {
+            if (!window.confirm("Delete the saved semester attendance?")) {
+                return;
+            }
+
+            localStorage.removeItem("siba-attendance-snapshot");
+            loadSavedAttendance();
+        });
 
         document.getElementById("login-form").addEventListener("submit", async event => {
             event.preventDefault();
