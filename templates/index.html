@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIBA Attendance Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+
+    <aside class="sidebar">
+        <h2>SIBA Tracker</h2>
+        <button class="nav active" data-view="live">Live Attendance</button>
+        <button class="nav" data-view="saved">Saved Attendance</button>
+        <button class="nav" data-view="login">Portal Login</button>
+    </aside>
+
+    <main>
+        <header>
+            <p class="eyebrow">STUDENT DASHBOARD</p>
+            <h1 id="page-title">Live Attendance</h1>
+            <p class="muted">Your attendance, in one place.</p>
+        </header>
+
+        <section id="live" class="view">
+            <div class="toolbar">
+                <h2>Subjects</h2>
+                <div class="filters">
+                    <select id="semester" aria-label="Semester" disabled></select>
+                    <select id="subject" aria-label="Subject" disabled></select>
+                    <button id="refresh">Refresh attendance</button>
+                    <button id="save-semester">Save semester</button>
+                </div>
+            </div>
+            <div id="attendance-list" class="attendance-grid"></div>
+            <p id="attendance-status" class="muted">
+                Log in through Portal Login to load your attendance.
+            </p>
+        </section>
+
+        <section id="saved" class="view hidden">
+            <h2>Saved Attendance</h2>
+            <p id="saved-status" class="muted">No snapshot saved yet.</p>
+            <div id="saved-list" class="attendance-grid"></div>
+        </section>
+
+        <section id="login" class="view hidden">
+            <h2>Connect to SIBA</h2>
+            <p>
+                Your credentials are sent to the official SIBA portal and are
+                not saved by this application.
+            </p>
+            <form id="login-form">
+                <label for="username">CMS ID</label>
+                <input id="username" name="username" required autocomplete="username">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" required
+                       autocomplete="current-password">
+                <button id="login-button" type="submit">Log in</button>
+            </form>
+            <p id="login-status" class="muted" role="status"></p>
+        </section>
+
+
+
+
+    </main>
+
+    <script>
+        const views = document.querySelectorAll(".view");
+        const navButtons = document.querySelectorAll(".nav");
+        const title = document.getElementById("page-title");
+        const attendanceStatus = document.getElementById("attendance-status");
+        const loginStatus = document.getElementById("login-status");
+        const loginButton = document.getElementById("login-button");
+        const semesterSelect = document.getElementById("semester");
+        const subjectSelect = document.getElementById("subject");
+
+        function showView(name) {
+            views.forEach(view =>
+                view.classList.toggle("hidden", view.id !== name)
+            );
+
+            navButtons.forEach(button =>
+                button.classList.toggle("active", button.dataset.view === name)
+            );
+
+            title.textContent = {
+                live: "Live Attendance",
+                saved: "Saved Attendance",
+                login: "Portal Login"
+            }[name];
+        }
+
+        navButtons.forEach(button => {
+            button.addEventListener("click", () => showView(button.dataset.view));
+        });
+
+        function renderAttendance(container, records) {
+            container.replaceChildren();
+
+            if (!records.length) {
+                container.textContent = "No attendance records available.";
+                return;
+            }
+
+            records.forEach(record => {
+                const attended = record.attended_units ?? record.attended;
+                const absent = record.absent_units ?? record.absent ?? 0;
+                const total = record.total_units ?? record.total;
+                const percentage = total
+                    ? Math.round(attended / total * 100)
+                    : 0;
+
+                const card = document.createElement("article");
+                card.className = "attendance-card";
+
+                const subject = document.createElement("h3");
+                subject.textContent = typeof record.subject === "object"
+                    ? record.subject.name
+                    : record.subject;
+
+                const stats = document.createElement("p");
+                stats.textContent =
+                    `${formatCount(attended)} present out of ${formatCount(total)}`;
+
+                const percent = document.createElement("strong");
+                percent.textContent = `${percentage}%`;
+
+                const track = document.createElement("div");
+                track.className = "progress";
+                const fill = document.createElement("div");
+                fill.className = "progress-fill";
+                fill.style.width = `${percentage}%`;
+                track.append(fill);
+
+                const absenceLabel = document.createElement("p");
+                const allowedAbsences = record.allowed_absence_units ?? 12;
+                const absenceBoxes = Math.min(
+                    record.absence_boxes_used ?? Math.ceil(absent),
+                    allowedAbsences
+                );
+                absenceLabel.className = "absence-label";
+                absenceLabel.textContent =
+                    `${formatCount(absent)} absent out of ${allowedAbsences}`;
+
+                const absenceTrack = document.createElement("div");
+                absenceTrack.className = "absence-progress";
+                for (let index = 0; index < allowedAbsences; index += 1) {
+                    const box = document.createElement("span");
+                    box.className = index < absenceBoxes
+                        ? "absence-box used"
+                        : "absence-box available";
+                    absenceTrack.append(box);
+                }
+                card.append(subject, stats, percent, track, absenceLabel, absenceTrack);
+                container.append(card);
+            });
+        }
+
+        function formatCount(value) {
+            return Number.isInteger(value) ? value : value.toFixed(1);
+        }
+
+        async function apiRequest(url, options) {
+            const response = await fetch(url, options);
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || "The request could not be completed");
+            }
+            return data;
+        }
+
+        async function loadAttendance(semester, subject) {
+            const params = new URLSearchParams();
+            const selectedSemester = semester || semesterSelect.value;
+            const selectedSubject = subject || subjectSelect.value;
+            if (selectedSemester) params.set("semester", selectedSemester);
+            if (selectedSubject) params.set("subject", selectedSubject);
+            const query = params.toString();
+            const result = await apiRequest(
+                `/api/attendance/details${query ? `?${query}` : ""}`
+            );
+            renderAttendance(
+                document.getElementById("attendance-list"),
+                [{
+                    subject: result.subject?.name || "Current subject",
+                    attended_units: result.summary.present_units,
+                    absent_units: result.summary.absent_units,
+                    total_units: result.summary.total_units,
+                    absence_boxes_used: result.summary.absence_boxes_used,
+                    allowed_absence_units: result.summary.allowed_absence_units
+                }]
+            );
+            attendanceStatus.textContent =
+                `${formatCount(result.summary.present_units)} present, ` +
+                `${formatCount(result.summary.absent_units)} absent — ` +
+                `${result.summary.percentage}% attendance`;
+        }
+
+        async function loadOptions(semester, selectedSubject) {
+            const selectedSemester = semester || semesterSelect.value;
+            const query = selectedSemester
+                ? `?semester=${encodeURIComponent(selectedSemester)}`
+                : "";
+            const options = await apiRequest(`/api/attendance/options${query}`);
+            semesterSelect.replaceChildren();
+            subjectSelect.replaceChildren();
+
+            options.semesters.forEach(option => {
+                const element = new Option(option.name, option.value);
+                semesterSelect.add(element);
+            });
+            options.subjects.forEach(option => {
+                const element = new Option(option.name, option.value);
+                subjectSelect.add(element);
+            });
+
+            if (selectedSemester) {
+                semesterSelect.value = selectedSemester;
+            }
+            if (selectedSubject) {
+                subjectSelect.value = selectedSubject;
+            }
+            semesterSelect.disabled = options.semesters.length === 0;
+            subjectSelect.disabled = options.subjects.length === 0;
+            return options;
+        }
+
+        document.getElementById("refresh").addEventListener("click", async () => {
+            try {
+                await loadAttendance();
+            } catch (error) {
+                attendanceStatus.textContent = error.message;
+            }
+        });
+
+        async function saveSnapshot() {
+            const saveButton = document.getElementById("save-semester");
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving semester...";
+            document.getElementById("saved-status").textContent =
+                "Fetching every subject in the selected semester...";
+            try {
+                if (!semesterSelect.value) {
+                    throw new Error("Select a semester before saving.");
+                }
+                const query = `?semester=${encodeURIComponent(semesterSelect.value)}`;
+                const records = await apiRequest(`/api/attendance/snapshot${query}`);
+                localStorage.setItem("siba-attendance-snapshot", JSON.stringify({
+                    savedAt: new Date().toISOString(),
+                    semester: records[0]?.semester || {
+                        name: semesterSelect.selectedOptions[0]?.text || "Selected semester",
+                        value: semesterSelect.value
+                    },
+                    records
+                }));
+
+                loadSavedAttendance();
+            } catch (error) {
+                document.getElementById("saved-status").textContent = error.message;
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = "Save semester";
+            }
+        }
+
+        document.getElementById("save-semester").addEventListener(
+            "click", saveSnapshot
+        );
+
+        function loadSavedAttendance() {
+            const raw = localStorage.getItem("siba-attendance-snapshot");
+            const status = document.getElementById("saved-status");
+            const list = document.getElementById("saved-list");
+
+            if (!raw) {
+                status.textContent = "No snapshot saved yet.";
+                list.replaceChildren();
+                return;
+            }
+
+            const snapshot = JSON.parse(raw);
+            status.textContent =
+                `Saved locally: ${new Date(snapshot.savedAt).toLocaleString()}`;
+            const records = snapshot.records ||
+                snapshot.semesters?.[0]?.records || [];
+            renderAttendance(list, records);
+        }
+
+        document.getElementById("login-form").addEventListener("submit", async event => {
+            event.preventDefault();
+            loginButton.disabled = true;
+            loginStatus.textContent = "Connecting to SIBA...";
+
+            const form = new FormData(event.currentTarget);
+            try {
+                await apiRequest("/api/login", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        username: form.get("username"),
+                        password: form.get("password")
+                    })
+                });
+                loginStatus.textContent = "Login successful. Loading attendance...";
+                await loadOptions();
+                await loadAttendance();
+                showView("live");
+            } catch (error) {
+                loginStatus.textContent = error.message;
+            } finally {
+                loginButton.disabled = false;
+            }
+        });
+
+        semesterSelect.addEventListener("change", async () => {
+            const selectedSemester = semesterSelect.value;
+            semesterSelect.disabled = true;
+            subjectSelect.disabled = true;
+            attendanceStatus.textContent = "Loading subjects for the selected semester...";
+            try {
+                const options = await loadOptions(selectedSemester);
+                await loadAttendance(selectedSemester, subjectSelect.value);
+                attendanceStatus.textContent =
+                    `${options.subjects.length} subject(s) loaded for the selected semester.`;
+            } catch (error) {
+                attendanceStatus.textContent = error.message;
+            } finally {
+                semesterSelect.disabled = false;
+                subjectSelect.disabled = false;
+            }
+        });
+        subjectSelect.addEventListener("change", () => {
+            loadAttendance(semesterSelect.value, subjectSelect.value).catch(error => {
+                attendanceStatus.textContent = error.message;
+            });
+        });
+
+        loadAttendance().catch(error => {
+            attendanceStatus.textContent = error.message;
+        });
+
+        loadSavedAttendance();
+    </script>
+</body>
+<footer>
+    <p> Made by <a href="https://github.com/Usman-Shah-Rashdi">Entity</a></p>
+</footer>
+</html>
