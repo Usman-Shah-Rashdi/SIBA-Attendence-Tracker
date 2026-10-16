@@ -19,6 +19,16 @@ app.config["SECRET_KEY"] = os.environ.get(
 clients: dict[str, SibaPortalClient] = {}
 
 
+@app.errorhandler(Exception)
+def handle_unexpected_error(error: Exception):
+    app.logger.exception("Unhandled application error", exc_info=error)
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "error": "The server could not complete the attendance request."
+        }), 500
+    raise error
+
+
 def _client() -> SibaPortalClient:
     client_id = session.get("client_id")
     if not client_id or client_id not in clients:
