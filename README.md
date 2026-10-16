@@ -36,6 +36,9 @@ python app.py
 
 Open **http://127.0.0.1:5000**, go to **Portal Login**, and sign in.
 
+The application uses the `PORT` environment variable when deployed and falls
+back to port `5000` locally.
+
 ## ☁️ Deploy to SnapDeploy
 
 This repository includes a production [`Dockerfile`](./Dockerfile) for
