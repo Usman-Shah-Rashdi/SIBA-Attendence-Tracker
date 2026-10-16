@@ -39,11 +39,26 @@ Open **http://127.0.0.1:5000**, go to **Portal Login**, and sign in.
 ## ☁️ Deploy to Render
 
 This repository includes [`render.yaml`](./render.yaml), which configures a
-Render web service automatically:
+Render **Free** web service:
 
-1. Create a new **Blueprint** in Render and select this repository.
+1. Create a new **Web Service** in Render and select this repository.
 2. Keep the generated `FLASK_SECRET_KEY` value private.
-3. Deploy the service and open its assigned HTTPS URL.
+3. Select the **Free** instance type if Render asks for a plan.
+4. Deploy the service and open its assigned HTTPS URL.
+
+For the Render **Start Command**, use:
+
+```bash
+gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
+```
+
+Here, the first `app` refers to [`app.py`](./app.py), and the second `app`
+refers to the Flask application object inside that file. Do not use
+`your_application.wsgi`; this project does not have a `wsgi.py` module.
+
+If Render asks for a payment method before creating any service, that is an
+account-verification requirement rather than an application or plan setting.
+The service itself is configured for the Free tier.
 
 The service uses Gunicorn with one worker because active SIBA portal sessions
 are held in application memory. Saved attendance snapshots remain in each
