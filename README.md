@@ -4,7 +4,10 @@ A clean local dashboard that logs in to the SIBA student portal and shows your a
 
 > Unofficial student project. Not affiliated with Sukkur IBA University.
 
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
+<img width="1352" height="714" alt="image" src="https://github.com/user-attachments/assets/97383563-c463-40c3-8d64-0868384b2866" />
+
+<img width="1348" height="704" alt="image" src="https://github.com/user-attachments/assets/57015aa8-1e61-46b4-85fc-49f8b258ec03" />
+
 
 ## ✨ Features
 
