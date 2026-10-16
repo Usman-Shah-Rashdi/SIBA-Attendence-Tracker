@@ -19,68 +19,82 @@ attendance saved in local memory so its display even when offline
 - **One saved semester snapshot**, stored in your browser, with an option to delete it
 - **Your password is never stored**, only forwarded to the portal
 
-## 🚀 Quick Start
+## 📁 Project layout
 
-Requires Python 3.10+ and a SIBA CMS ID.
+```text
+src/siba_attendance_tracker/
+├── app.py                 # Local Flask API and dashboard routes
+├── desktop.py             # Native PyWebView application entry point
+├── portal.py              # SIBA login, postbacks, and HTML parsing
+├── static/style.css       # Dashboard styling
+└── templates/index.html   # Dashboard UI
+tests/                     # Backend and parser tests
+packaging/                 # PyInstaller spec and Linux desktop metadata
+.github/workflows/         # Linux, Windows, AppImage, and source builds
+```
+
+The repository is desktop-focused. The Flask API is embedded inside the
+native application and is not a separately deployed web service.
+
+## 🖥️ Build the native desktop app
+
+The PC release is a downloadable native-window executable. It bundles the
+Python runtime and starts the local API automatically, so users do not install
+Python, run a command, or install a browser extension.
+
+Install the build-only dependencies and create the executable:
 
 ```bash
-git clone https://github.com/Usman-Shah-Rashdi/SIBA-Attendence-Tracker.git
-cd SIBA-Attendence-Tracker
-
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
-
-pip install -r requirements.txt
-python app.py
+pip install -r desktop-requirements.txt
+pyinstaller --clean --noconfirm "packaging/SIBA Attendance Tracker.spec"
 ```
 
-Open **http://127.0.0.1:5000**, go to **Portal Login**, and sign in.
+The resulting executable is in `dist/` (`.exe` on Windows). Builds are
+platform-specific, so build a Windows executable on Windows and a Linux
+executable on Linux. The first launch may require the operating system's
+WebView runtime (Windows WebView2 is normally already installed).
 
-The application uses the `PORT` environment variable when deployed and falls
-back to port `5000` locally.
+Tagged GitHub releases automatically build and attach both desktop artifacts.
+The same workflow can also be started manually from the Actions tab.
 
-## ☁️ Deploy to SnapDeploy
+This is a bundled Python application rather than a source distribution: the
+downloaded program contains its interpreter and dependencies.
 
-This repository includes a production [`Dockerfile`](./Dockerfile) for
-SnapDeploy:
+Each tagged release provides four downloads:
 
-1. Push the repository to GitHub.
-2. In SnapDeploy, choose **Deploy → GitHub repository** and select this
-   repository and branch.
-3. Set the container port to `5000` (or let SnapDeploy detect it from the
-   Dockerfile).
-4. Add the environment variables below, keeping `FLASK_SECRET_KEY` private.
-5. Deploy and open the generated app URL.
+- `SIBA-Attendance-Tracker-windows.exe`
+- `SIBA-Attendance-Tracker-linux.AppImage`
+- `SIBA-Attendance-Tracker-linux.tar.gz`
+- `SIBA-Attendance-Tracker-source.zip`
 
-The Dockerfile starts the Flask application with:
+The AppImage is the recommended Linux download. It can be run after granting
+execute permission:
 
 ```bash
-gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
+chmod +x SIBA-Attendance-Tracker-linux.AppImage
+./SIBA-Attendance-Tracker-linux.AppImage
 ```
 
-Here, the first `app` refers to [`app.py`](./app.py), and the second `app`
-refers to the Flask application object inside that file.
-
-The service uses Gunicorn with one worker because active SIBA portal sessions
-are held in application memory. Saved attendance snapshots remain in each
-user's browser.
+The source ZIP is for developers who want to inspect or build the project.
 
 ## ⚙️ Configuration (optional)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `FLASK_SECRET_KEY` | random | Signs the session cookie |
 | `SIBA_PORTAL_URL` | `http://sibagrades.iba-suk.edu.pk:86/` | Portal address |
 | `SIBA_PORTAL_TIMEOUT` | `20` | Request timeout in seconds |
 
 ## 🧰 Built With
 
-Flask · Requests · BeautifulSoup · vanilla HTML/CSS/JavaScript
+Flask · Requests · BeautifulSoup · PyWebView · PyInstaller ·
+vanilla HTML/CSS/JavaScript
 
 ## 🧪 Tests
 
 ```bash
-python -m unittest test_backend -v
+PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
 ## 📖 Documentation
@@ -91,8 +105,8 @@ Detailed architecture, API, frontend, testing, security, and troubleshooting not
 ## 🔒 Note
 
 Meant to run locally for one user. The portal uses plain HTTP, so use a network you trust and don't expose this app to the internet.
-there are things missing that i want to add first is polishing the code and deploying it as a web app.
-or an apk release as well.
+The Android APK will be added as a separate mobile build once the Android
+client is implemented. The current desktop executable is not an APK.
 
 ## 📄 License
 

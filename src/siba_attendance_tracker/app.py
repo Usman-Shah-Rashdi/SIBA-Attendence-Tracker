@@ -4,7 +4,7 @@ import secrets
 
 from flask import Flask, jsonify, render_template, request, session
 
-from siba_portal import (
+from .portal import (
     PortalError,
     PortalLoginError,
     SibaPortalClient,

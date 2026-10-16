@@ -1,5 +1,5 @@
 
-from siba_portal import parse_attendance_html
+from siba_attendance_tracker.portal import parse_attendance_html
 
 sample_html = """
 <html>

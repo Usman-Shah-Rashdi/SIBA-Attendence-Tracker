@@ -2,11 +2,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from siba_portal import SibaPortalClient
-from app import app
+from siba_attendance_tracker.portal import SibaPortalClient
+from siba_attendance_tracker.app import app
 
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parents[1]
 ATTENDANCE_HTML = (PROJECT_ROOT / "actual_attendance.html").read_text(
     encoding="utf-8"
 )
@@ -109,7 +109,10 @@ class SibaPortalClientTests(unittest.TestCase):
         fake_client = Mock()
         fake_client.all_attendance.return_value = [{"semester": {"value": "2613"}}]
         with app.test_client() as flask_client:
-            with patch("app._client", return_value=fake_client):
+            with patch(
+                "siba_attendance_tracker.app._client",
+                return_value=fake_client,
+            ):
                 response = flask_client.get("/api/attendance/snapshot?semester=2613")
 
         self.assertEqual(response.status_code, 200)

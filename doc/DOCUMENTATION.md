@@ -22,12 +22,14 @@ This document explains how the project is built, how data flows through it, and 
 
 The SIBA student portal is an ASP.NET WebForms site. It shows attendance one subject at a time, behind a login, and presents raw lists of dates rather than a summary.
 
-**SIBA Attendance Tracker** is a small web app that acts as a friendly layer on top of that portal:
+**SIBA Attendance Tracker** is a small desktop app that acts as a friendly
+layer on top of that portal:
 
 1. The user logs in through the tracker's own page.
 2. The Flask backend logs in to the portal on the user's behalf and keeps that portal session.
 3. When attendance is requested, the backend submits the portal's forms, parses the returned HTML, and computes totals and percentages.
-4. The browser shows the result as cards with progress bars, and can save snapshots locally.
+4. The embedded dashboard shows the result as cards with progress bars, and
+   can save snapshots locally.
 
 There is no database. The only persistent data is the optional snapshot kept in the browser's `localStorage`.
 
@@ -37,8 +39,8 @@ There is no database. The only persistent data is the optional snapshot kept in 
 
 ```mermaid
 flowchart LR
-    B[Browser<br/>index.html + JS] -- JSON over HTTP --> F[Flask app<br/>app.py]
-    F -- uses --> C[SibaPortalClient<br/>siba_portal.py]
+    B[PyWebView window<br/>templates/index.html + JS] -- localhost JSON --> F[Flask app<br/>src/siba_attendance_tracker/app.py]
+    F -- uses --> C[SibaPortalClient<br/>src/siba_attendance_tracker/portal.py]
     C -- requests.Session<br/>GET / POST forms --> P[(SIBA Portal<br/>ASP.NET)]
     P -- HTML --> C
     C -- BeautifulSoup parse --> F
@@ -49,11 +51,11 @@ flowchart LR
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| Web server and API | `app.py` | Routes, session cookie, error-to-HTTP mapping, shaping JSON for the UI |
-| Portal client | `siba_portal.py` → `SibaPortalClient` | Logs in, submits ASP.NET postbacks, keeps cookies and the latest page |
-| Parsers | `siba_portal.py` → `parse_attendance_html`, `parse_portal_options` | Turn portal HTML into Python dictionaries |
-| UI | `templates/index.html` | Three views (Live, Saved, Login) and all client-side logic |
-| Styling | `static/style.css` | Dark theme, cards, progress bars, absence boxes |
+| Web server and API | `src/siba_attendance_tracker/app.py` | Routes, session cookie, error-to-HTTP mapping, shaping JSON for the UI |
+| Portal client | `src/siba_attendance_tracker/portal.py` → `SibaPortalClient` | Logs in, submits ASP.NET postbacks, keeps cookies and the latest page |
+| Parsers | `src/siba_attendance_tracker/portal.py` → `parse_attendance_html`, `parse_portal_options` | Turn portal HTML into Python dictionaries |
+| UI | `src/siba_attendance_tracker/templates/index.html` | Three views (Live, Saved, Login) and all client-side logic |
+| Styling | `src/siba_attendance_tracker/static/style.css` | Dark theme, cards, progress bars, absence boxes |
 
 ### Session model
 
@@ -116,7 +118,7 @@ for the semester selection.
 
 ## 4. Module Reference
 
-### `siba_portal.py`
+### `src/siba_attendance_tracker/portal.py`
 
 **Constants**
 
@@ -157,7 +159,7 @@ for the semester selection.
 | `attendance(semester=None, subject=None)` | Returns the parsed attendance for the selection (or current page if none given) |
 | `all_attendance(semester_value=None)` | Returns summaries for every subject in the selected semester, or all semesters when called without a filter |
 
-### `app.py`
+### `src/siba_attendance_tracker/app.py`
 
 | Item | Purpose |
 |------|---------|
@@ -376,14 +378,14 @@ Cards are built with `createElement` and `textContent` rather than `innerHTML`, 
 
 ```bash
 python -m unittest test_backend -v   # client + API route tests
-python test_parser.py                # standalone parser check
+PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
 ### What is covered
 
 | Test | Verifies |
 |------|----------|
-| `test_parser.py` | Parsing a minimal hand-written page: names, counts, units, percentage |
+| `tests/test_parser.py` | Parsing a minimal hand-written page: names, counts, units, percentage |
 | `test_login_loads_options_and_attendance` | Login posts credentials, options and summary are parsed correctly |
 | `test_attendance_selection_posts_aspnet_form` | Semester, subject, and submit button are posted |
 | `test_semester_change_posts_aspnet_event_and_refreshes_options` | `__EVENTTARGET` postback is sent |
@@ -396,7 +398,7 @@ The backend tests replace `requests.Session` with a `FakeSession`, so **no real 
 
 ### The `actual_attendance.html` fixture
 
-`test_backend.py` loads `actual_attendance.html`, a saved copy of a real portal page. Because a real page can contain personal details, the file is excluded by `.gitignore`. That means **the backend tests will fail on a fresh clone** until a fixture exists.
+`tests/test_backend.py` loads `actual_attendance.html`, a saved copy of a real portal page. Because a real page can contain personal details, the file is excluded by `.gitignore`. That means **the backend tests will fail on a fresh clone** until a fixture exists.
 
 Two ways to handle that:
 
@@ -416,11 +418,12 @@ Option 2 is the better choice if you want contributors to be able to run the tes
 | Session cookie | Signed with `SECRET_KEY` | Set `FLASK_SECRET_KEY` to a long random value |
 | Secret key | Random on every start, so a restart logs everyone out | Fix the value via env var if you want persistence |
 | Session storage | In-memory dict, no expiry | Add expiry and cleanup before any multi-user use |
-| Debug mode | `app.run(debug=True)` | Never run with debug on a reachable network. The Werkzeug debugger allows code execution |
+| Debug mode | Disabled | Keep it disabled in release builds |
 | Exposure | Intended for `127.0.0.1` | Do not deploy publicly with the current design |
 | Data in browser | Snapshots in `localStorage` | Contains attendance data only, no credentials |
 
-If you want to host it for others, you would need HTTPS on your own server, per-session expiry, rate limiting on `/api/login`, a production WSGI server, and a clear privacy notice, since the server would be handling other students' credentials.
+The release is intended for one local user. Do not expose the embedded API to
+the network or reuse this session design as a multi-user hosted service.
 
 ---
 
@@ -442,7 +445,7 @@ If you want to host it for others, you would need HTTPS on your own server, per-
 ## 11. Extending the Project
 
 **Change the absence rule or unit length**
-Edit `ALLOWED_ABSENCE_UNITS` and `MINUTES_PER_UNIT` at the top of `siba_portal.py`. The UI reads `allowed_absence_units` from the API, so the boxes adjust automatically.
+Edit `ALLOWED_ABSENCE_UNITS` and `MINUTES_PER_UNIT` at the top of `src/siba_attendance_tracker/portal.py`. The UI reads `allowed_absence_units` from the API, so the boxes adjust automatically.
 
 **Add a "classes I can still skip" calculator**
 All the numbers are already in the summary. For a required percentage `r` (for example `0.75`) and current units `p` present and `t` total, the number of extra 1-unit absences you can take while staying at or above `r`, assuming no more classes are attended, is `floor(p / r − t)` when positive. Add it in `parse_attendance_html` or in the frontend.
@@ -453,5 +456,6 @@ All the numbers are already in the summary. For a required percentage `r` (for e
 **Export to CSV**
 Add a button in the Saved view that converts the `localStorage` snapshot into CSV and downloads it using a `Blob`.
 
-**Production deployment**
-Remove `debug=True`, run behind a production server (Waitress on Windows, Gunicorn on Linux), set `FLASK_SECRET_KEY`, and put it behind HTTPS.
+**Build a desktop release**
+Install `desktop-requirements.txt` and run the PyInstaller command documented
+in the README. Build separately on Linux and Windows.
