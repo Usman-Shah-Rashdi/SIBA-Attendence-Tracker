@@ -8,6 +8,8 @@ A clean local dashboard that logs in to the SIBA student portal and shows your a
 
 <img width="1348" height="704" alt="image" src="https://github.com/user-attachments/assets/57015aa8-1e61-46b4-85fc-49f8b258ec03" />
 
+<img width="1347" height="707" alt="image" src="https://github.com/user-attachments/assets/c0a489bd-c8cd-4ddf-afb7-ea1fe2847528" />
+attendance saved in local memory so its display even when offline
 
 ## ✨ Features
 
