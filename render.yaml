@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: siba-attendance-tracker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: SIBA_PORTAL_URL
+        value: http://sibagrades.iba-suk.edu.pk:86/
+      - key: SIBA_PORTAL_TIMEOUT
+        value: "20"

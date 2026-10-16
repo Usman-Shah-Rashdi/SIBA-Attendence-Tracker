@@ -36,6 +36,19 @@ python app.py
 
 Open **http://127.0.0.1:5000**, go to **Portal Login**, and sign in.
 
+## ☁️ Deploy to Render
+
+This repository includes [`render.yaml`](./render.yaml), which configures a
+Render web service automatically:
+
+1. Create a new **Blueprint** in Render and select this repository.
+2. Keep the generated `FLASK_SECRET_KEY` value private.
+3. Deploy the service and open its assigned HTTPS URL.
+
+The service uses Gunicorn with one worker because active SIBA portal sessions
+are held in application memory. Saved attendance snapshots remain in each
+user's browser.
+
 ## ⚙️ Configuration (optional)
 
 | Variable | Default | Purpose |
