@@ -57,6 +57,8 @@ Detailed architecture, API, frontend, testing, security, and troubleshooting not
 ## 🔒 Note
 
 Meant to run locally for one user. The portal uses plain HTTP, so use a network you trust and don't expose this app to the internet.
+there are things missing that i want to add first is polishing the code and deploying it as a web app.
+or an apk release as well.
 
 ## 📄 License
 
