@@ -44,7 +44,7 @@ SnapDeploy:
 1. Push the repository to GitHub.
 2. In SnapDeploy, choose **Deploy → GitHub repository** and select this
    repository and branch.
-3. Set the container port to `8000` (or let SnapDeploy detect it from the
+3. Set the container port to `5000` (or let SnapDeploy detect it from the
    Dockerfile).
 4. Add the environment variables below, keeping `FLASK_SECRET_KEY` private.
 5. Deploy and open the generated app URL.
