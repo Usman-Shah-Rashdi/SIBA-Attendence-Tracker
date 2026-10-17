@@ -3,5 +3,6 @@ Type=Application
 Name=SIBA Attendance Tracker
 Comment=View attendance from the SIBA student portal
 Exec=siba-attendance-tracker
+Icon=siba-attendance-tracker
 Terminal=false
-Categories=Education;Utility;
+Categories=Education;
