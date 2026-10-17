@@ -1,9 +1,12 @@
 # PyInstaller build definition for the single-file desktop application.
 
 from PyInstaller.utils.hooks import collect_submodules
+import sys
 
 
 hiddenimports = collect_submodules("webview.platforms")
+if sys.platform == "linux":
+    hiddenimports += collect_submodules("gi")
 
 a = Analysis(
     ["../src/siba_attendance_tracker/desktop.py"],
