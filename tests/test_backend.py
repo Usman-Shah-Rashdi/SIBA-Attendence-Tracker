@@ -7,8 +7,11 @@ from siba_attendance_tracker.app import app
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
-ATTENDANCE_HTML = (PROJECT_ROOT / "actual_attendance.html").read_text(
-    encoding="utf-8"
+ATTENDANCE_HTML_PATH = PROJECT_ROOT / "actual_attendance.html"
+ATTENDANCE_HTML = (
+    ATTENDANCE_HTML_PATH.read_text(encoding="utf-8")
+    if ATTENDANCE_HTML_PATH.exists()
+    else ""
 )
 LOGIN_HTML = """
 <form id="form1">
@@ -44,6 +47,10 @@ class FakeSession:
         return FakeResponse(ATTENDANCE_HTML, url)
 
 
+@unittest.skipUnless(
+    ATTENDANCE_HTML_PATH.exists(),
+    "Local actual_attendance.html fixture is not available",
+)
 class SibaPortalClientTests(unittest.TestCase):
     def setUp(self):
         self.client = SibaPortalClient(base_url="http://portal.test/")
