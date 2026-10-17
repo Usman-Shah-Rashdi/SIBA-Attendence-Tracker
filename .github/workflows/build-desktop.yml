@@ -65,6 +65,8 @@ jobs:
             cp "dist/SIBA Attendance Tracker" AppDir/usr/bin/siba-attendance-tracker
             cp packaging/siba-attendance-tracker.desktop \
               AppDir/usr/share/applications/siba-attendance-tracker.desktop
+            cp packaging/siba-attendance-tracker.desktop \
+              AppDir/siba-attendance-tracker.desktop
             chmod +x AppDir/usr/bin/siba-attendance-tracker
             wget -q \
               https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage \
