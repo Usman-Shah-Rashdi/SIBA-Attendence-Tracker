@@ -77,6 +77,9 @@ chmod +x SIBA-Attendance-Tracker-linux.AppImage
 ./SIBA-Attendance-Tracker-linux.AppImage
 ```
 
+If the Linux WebView runtime is unavailable, the application opens the
+dashboard in your default browser instead.
+
 The source ZIP is for developers who want to inspect or build the project.
 
 ## ⚙️ Configuration (optional)
