@@ -7,7 +7,7 @@ import threading
 import webview
 from werkzeug.serving import BaseWSGIServer, make_server
 
-from .app import app
+from siba_attendance_tracker.app import app
 
 
 def main() -> None:
