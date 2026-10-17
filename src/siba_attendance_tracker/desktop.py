@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import threading
+import webbrowser
 
 import webview
 from werkzeug.serving import BaseWSGIServer, make_server
 
-from .app import app
+from siba_attendance_tracker.app import app
 
 
 def main() -> None:
@@ -20,10 +21,11 @@ def main() -> None:
         daemon=True,
     )
     server_thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/"
 
     window = webview.create_window(
         "SIBA Attendance Tracker",
-        f"http://127.0.0.1:{server.server_port}/",
+        url,
         width=1200,
         height=800,
         min_size=(900, 600),
@@ -32,6 +34,11 @@ def main() -> None:
 
     try:
         webview.start()
+    except webview.WebViewException:
+        app.logger.exception("Native WebView unavailable; opening the dashboard in a browser")
+        if not webbrowser.open(url):
+            raise
+        server_thread.join()
     finally:
         server.shutdown()
         server_thread.join(timeout=5)
